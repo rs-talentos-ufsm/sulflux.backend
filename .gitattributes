@@ -1,0 +1,75 @@
+# ------------------------------------------------------------------------------
+# FIM DE LINHA (End of Line - EOL)
+# ------------------------------------------------------------------------------
+# O padrão é: Git converte para LF no commit, e para o OS nativo no checkout.
+# Isso evita a bagunça de arquivos misturando \r\n e \n.
+* text=auto
+
+# Arquivos de código e configuração DEVEM ser sempre LF (Linux style).
+# Isso garante que scripts e configs rodem suavemente em Containers Docker e Linux.
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# CRÍTICO: Shell scripts DEVEM ser LF, senão o Docker/Linux não executa.
+*.sh text eol=lf
+
+# Arquivos específicos de Windows podem manter CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# ------------------------------------------------------------------------------
+# BINÁRIOS (Não tentar converter quebra de linha)
+# ------------------------------------------------------------------------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.ttf binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.rar binary
+
+# ------------------------------------------------------------------------------
+# GITHUB LINGUIST (Estatísticas do Repositório)
+# ------------------------------------------------------------------------------
+# Isso impede que arquivos gerados ou de configuração poluem a barra de 
+# linguagens do GitHub (ex: "Seu projeto é 90% HTML" por causa de arquivos minificados).
+
+# Lockfiles não são código fonte
+package-lock.json linguist-generated
+yarn.lock linguist-generated
+pnpm-lock.yaml linguist-generated
+
+# Arquivos minificados e de build
+*.min.js linguist-generated
+*.min.css linguist-generated
+dist/* linguist-generated
+build/* linguist-generated
+coverage/* linguist-generated
+
+# Documentação
+*.md linguist-documentation
+LICENSE linguist-documentation
+
+# ------------------------------------------------------------------------------
+# ARQUIVOS DE CONFIGURAÇÃO ESPECÍFICOS
+# ------------------------------------------------------------------------------
+# Forçar syntax highlighting correto para arquivos sem extensão ou extensões exóticas
+.env* dockerfile
+Dockerfile* dockerfile

@@ -1,0 +1,37 @@
+services:
+  backend:
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - ./.env.production
+    depends_on:
+      - jaeger
+    networks:
+      project_network:
+        aliases:
+          - backend
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: ${PROJECT_NAME}_jaeger_prod
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: always
+    networks:
+      project_network:
+        aliases:
+          - jaeger
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: ${PROJECT_NAME}_tunnel_prod
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      - TUNNEL_TRANSPORT_PROTOCOL=http2
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - jaeger
+    networks:
+      - project_network

@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('BACKLOG', 'PENDING', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'ARCHIVED');
+
+-- AlterTable
+ALTER TABLE "tasks" ADD COLUMN     "status" "TaskStatus" NOT NULL DEFAULT 'BACKLOG';

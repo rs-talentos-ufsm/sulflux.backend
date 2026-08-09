@@ -1,0 +1,48 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ${PROJECT_NAME}-backend-dev
+    image: ${PROJECT_NAME}_backend_dev
+    env_file:
+      - ./.env.development
+    ports:
+      - '${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}'
+    volumes:
+      - .:/app
+      - /app/node_modules 
+      - ../../packages/shared:/app/node_modules/@lib/shared
+    command: npm run dev
+    restart: 'no'
+    depends_on:
+      - jaeger
+      - db
+    networks:
+      project_network:
+        aliases:
+          - backend
+
+  db:
+    container_name: ${PROJECT_NAME}_db_dev
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    networks:
+      - project_network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: ${PROJECT_NAME}_jaeger_dev
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - '${JAEGER_PORT:-16686}:16686' # Interface UI do Jaeger
+      - '${OTLP_GRPC_PORT:-4317}:4317' # Porta OTLP gRPC
+      - '${OTLP_HTTP_PORT:-4318}:4318' # Porta OTLP HTTP
+    networks:
+      - project_network
+  
+networks:
+  project_network:
+    name: '${PROJECT_NAME}_network'
+    external: true

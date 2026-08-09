@@ -1,0 +1,24 @@
+# Diretórios padrão do Node/Build
+node_modules
+dist
+build
+
+# Arquivos de Lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Arquivos do Git
+.git
+.gitignore
+
+# Outros (como arquivos de log)
+*.log
+
+# Diretórios de ambiente
+coverage
+.env
+.env.*
+
+# Código auto-gerado (Prisma, etc)
+generated/

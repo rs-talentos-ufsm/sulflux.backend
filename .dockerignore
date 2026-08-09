@@ -1,0 +1,85 @@
+# ------------------------------------------------------------------------------
+# Dependências & Bloqueios
+# ------------------------------------------------------------------------------
+# Ignora node_modules local. O Docker deve instalar suas próprias deps
+# para garantir compatibilidade com o OS do container (Linux Alpine/Debian).
+**/node_modules
+**/npm-debug.log
+**/yarn-error.log
+**/pnpm-debug.log*
+**/generated
+
+# Nota: Em alguns casos, você PODE querer copiar os lockfiles (package-lock.json / yarn.lock)
+# para garantir versões exatas. Se for o caso, remova-os desta lista,
+# mas MANTENHA o node_modules ignorado.
+# (Estão removidos do ignore para que o seu COPY package*.json funcione 100%)
+
+# ------------------------------------------------------------------------------
+# Build & Compilação (Artifacts)
+# ------------------------------------------------------------------------------
+# Não copie o build local para o container; o container deve fazer o build (multistage).
+**/dist
+**/build
+**/out
+**/coverage
+**/.next
+**/.nuxt
+**/.cache
+
+# ------------------------------------------------------------------------------
+# Variáveis de Ambiente & Segredos (CRÍTICO)
+# ------------------------------------------------------------------------------
+# NUNCA copie arquivos .env para a imagem. Injete as variáveis no runtime
+# via docker-compose ou orchestrator (K8s/AWS ECS).
+**/.env*
+**/.env.local
+**/.env.development
+**/.env.test
+**/.env.production
+!**/.env.example
+**/*.pem
+**/*.key
+
+# ------------------------------------------------------------------------------
+# Git & Controle de Versão
+# ------------------------------------------------------------------------------
+**/.git
+**/.gitignore
+**/.gitattributes
+**/.github
+**/.gitlab-ci.yml
+
+# ------------------------------------------------------------------------------
+# IDEs & Sistema Operacional
+# ------------------------------------------------------------------------------
+**/.vscode
+**/.idea
+**/.DS_Store
+**/Thumbs.db
+**/*.swp
+**/*.swo
+
+# ------------------------------------------------------------------------------
+# Docker & DevOps
+# ------------------------------------------------------------------------------
+# O container não precisa saber como ele foi construído
+**/Dockerfile
+**/docker-compose.yml
+**/docker-compose.*.yml
+**/.dockerignore
+**/Makefile
+**/README.md
+**/CHANGELOG.md
+
+# ------------------------------------------------------------------------------
+# Testes & Linter
+# ------------------------------------------------------------------------------
+# Geralmente não precisamos de testes na imagem de produção
+**/tests
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+**/.eslintrc.js
+**/.prettierrc
+**/jest.config.js
+**/vitest.config.ts

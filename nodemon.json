@@ -1,0 +1,8 @@
+{
+  "legacyWatch": true,
+  "watch": ["src", "node_modules/@lib/shared/dist"],
+  "ignoreRoot": [".git"],
+  "delay": "1",
+  "ext": "ts,js",
+  "exec": "tsx src/server.ts"
+}
