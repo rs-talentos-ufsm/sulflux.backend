@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PropertyService } from './property.service.js';
+import { PropertyService } from './property.service';
 import {
   UpdatePropertyDTO,
   PaginatedPropertiesDTO,

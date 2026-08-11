@@ -10,8 +10,8 @@ import {
   createPaginatedResponseSchema,
   propertyQuerySchema,
 } from '@lib/shared';
-import { PropertyController } from './property.controller.js';
-import { ensureAuthenticated } from '../../middleware/ensureAuthenticated.js';
+import { PropertyController } from './property.controller';
+import { ensureAuthenticated } from '../../middleware/ensureAuthenticated';
 
 const router = Router();
 const propertyController = new PropertyController();
