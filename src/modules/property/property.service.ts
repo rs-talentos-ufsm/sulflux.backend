@@ -1,5 +1,5 @@
-import { prisma } from '../../infra/database.js';
-import { AppError } from '../../utils/AppError.js';
+import { prisma } from '../../infra/database';
+import { AppError } from '../../utils/AppError';
 import {
   CreatePropertyDTO,
   UpdatePropertyDTO,
@@ -49,7 +49,7 @@ export class PropertyService {
 
       const whereCondition: any = { ownerId: userId };
 
-      if (status && status !== 'todas') {
+      if (status) {
         whereCondition.status = status;
       }
 
