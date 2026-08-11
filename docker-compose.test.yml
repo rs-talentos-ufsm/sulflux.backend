@@ -5,6 +5,10 @@ services:
       dockerfile: Dockerfile.dev
     env_file:
       - ./.env.test
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ../../packages/shared:/app/node_modules/@lib/shared
     depends_on:
       db_test:
         condition: service_healthy

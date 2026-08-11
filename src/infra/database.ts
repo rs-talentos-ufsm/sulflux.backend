@@ -36,7 +36,7 @@ export const basePrisma =
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
 
 // Lista de models que NÃO possuem coluna 'deletedAt' e DEVEM ser apagados de verdade
-const nonSoftDeleteModels = ['TimeSession', 'TimeLog'];
+const nonSoftDeleteModels = ['Property'];
 
 // Aplica as extensões na instância base
 export const prisma = basePrisma.$extends({

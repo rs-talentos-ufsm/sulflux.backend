@@ -36,7 +36,7 @@ export class UserService {
         data: {
           ...userData,
           password: hashedPassword,
-          is_active: true,
+          isActive: true,
         },
       });
 
@@ -101,10 +101,10 @@ export class UserService {
 
       const [count, users] = await prisma.$transaction([
         prisma.user.count({
-          where: { is_active: true },
+          where: { isActive: true },
         }),
         prisma.user.findMany({
-          where: { is_active: true },
+          where: { isActive: true },
           skip,
           take: limit,
           orderBy: { name: 'asc' },
@@ -222,7 +222,7 @@ export class UserService {
 
       await prisma.user.update({
         where: { id },
-        data: { is_active: false },
+        data: { isActive: false },
       });
 
       // Removido o retorno, já que o controller manda 204 No Content

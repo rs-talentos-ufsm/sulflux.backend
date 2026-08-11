@@ -109,21 +109,22 @@ export class AuthController {
       }
 
       // Recusa o registro de novos usuários, apenas permite para emails listados
-      const allowedEmails =
-        process.env.ALLOWED_REGISTER_EMAILS?.split(',').map((email) =>
-          email.trim().toLowerCase(),
-        ) ?? [];
+      if (process.env.NODE_ENV === 'production') {
+        const allowedEmails =
+          process.env.ALLOWED_REGISTER_EMAILS?.split(',').map((email) =>
+            email.trim().toLowerCase(),
+          ) ?? [];
 
-      console.log('Emails permitidos para registro:', allowedEmails);
-
-      if (!allowedEmails.includes(validation.data.email.toLowerCase())) {
-        res.status(403).json({
-          type: '/errors/forbidden',
-          title: 'Registro não permitido.',
-          status: 403,
-          detail: 'Registro de novos usuários não está habilitado no momento.',
-        });
-        return;
+        if (!allowedEmails.includes(validation.data.email.toLowerCase())) {
+          res.status(403).json({
+            type: '/errors/forbidden',
+            title: 'Registro não permitido.',
+            status: 403,
+            detail:
+              'Registro de novos usuários não está habilitado no momento.',
+          });
+          return;
+        }
       }
 
       const newUser: UserResponseDTO = await this.authService.register(
