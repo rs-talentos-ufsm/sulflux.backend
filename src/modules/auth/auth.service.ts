@@ -34,7 +34,7 @@ export class AuthService {
         throw new AppError('Email ou senha inválidos', 401);
       }
 
-      if (!user.is_active) {
+      if (!user.isActive) {
         throw new AppError('Usuário inativo. Contate o administrador.', 403);
       }
 
@@ -94,7 +94,7 @@ export class AuthService {
             data: {
               ...userData,
               password: hashedPassword,
-              is_active: true,
+              isActive: true,
             },
           });
         },
@@ -128,7 +128,7 @@ export class AuthService {
         where: { id: userId },
       });
 
-      if (!user || !user.is_active) {
+      if (!user || !user.isActive) {
         throw new AppError('Usuário não autorizado.', 401);
       }
 
