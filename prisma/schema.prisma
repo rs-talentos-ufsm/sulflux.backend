@@ -54,7 +54,7 @@ model Property {
   id        String         @id @default(uuid()) @db.Uuid
   name      String
   location  String
-  car       String         @unique
+  car       String?        @unique
   status    PropertyStatus @default(CONFIGURE)
 
   ownerId   String         @db.Uuid @map("owner_id")
