@@ -23,6 +23,10 @@ export class PropertyService {
           ...data,
           ownerId: userId,
           status: PropertyStatus.Configure,
+          car: data.car ?? null,
+        },
+        include: {
+          owner: true,
         },
       });
 
@@ -68,6 +72,9 @@ export class PropertyService {
           skip,
           take: limit,
           orderBy: { createdAt: 'desc' },
+          include: {
+            owner: true,
+          },
         }),
       ]);
 
@@ -99,6 +106,9 @@ export class PropertyService {
     try {
       const property = await prisma.property.findFirst({
         where: { id, ownerId: userId },
+        include: {
+          owner: true,
+        },
       });
 
       if (!property) {
