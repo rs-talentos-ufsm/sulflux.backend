@@ -11,7 +11,7 @@ import {
   propertyQuerySchema,
 } from '@lib/shared';
 import { PropertyController } from './property.controller';
-import { ensureAuthenticated } from '../../middleware/ensureAuthenticated';
+import { ensureAuthenticated } from '@/middleware/ensureAuthenticated';
 
 const router = Router();
 const propertyController = new PropertyController();
