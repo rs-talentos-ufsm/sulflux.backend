@@ -24,7 +24,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - '${DB_PORT:-5433}:5432'
+      - '${DB_PORT:-5435}:5432'
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:

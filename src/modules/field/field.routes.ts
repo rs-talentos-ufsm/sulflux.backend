@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import {
   registry,
-  z,
   createFieldSchema,
   updateFieldSchema,
   fieldIdSchema,

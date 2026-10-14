@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import {
   registry,
-  z,
   createPropertySchema,
   updatePropertySchema,
   propertyIdSchema,
@@ -9,6 +8,8 @@ import {
   rfc7807ErrorSchema,
   createPaginatedResponseSchema,
   propertyQuerySchema,
+  carLookupQuerySchema,
+  carLookupResponseSchema,
 } from '@lib/shared';
 import { PropertyController } from './property.controller';
 import { ensureAuthenticated } from '@/middleware/ensureAuthenticated';
@@ -22,6 +23,32 @@ const propertyPaginatedResponseSchema = createPaginatedResponseSchema(
 );
 
 // --- Registro das Rotas no OpenAPI Registry ---
+
+// Rota: Consultar CAR
+registry.registerPath({
+  method: 'get',
+  path: '/properties/car/lookup',
+  summary:
+    'Consulta dados cadastrais e geometria a partir do número do CAR (SICAR)',
+  security: [{ cookieAuth: [] }],
+  tags: ['Property'],
+  request: { query: carLookupQuerySchema },
+  responses: {
+    200: {
+      description: 'Dados do CAR consultados com sucesso',
+      content: { 'application/json': { schema: carLookupResponseSchema } },
+    },
+    400: {
+      description: 'Número do CAR com formato inválido',
+      content: { 'application/json': { schema: rfc7807ErrorSchema } },
+    },
+    401: { description: 'Não autorizado' },
+    409: {
+      description: 'CAR já cadastrado no sistema em outra propriedade',
+      content: { 'application/json': { schema: rfc7807ErrorSchema } },
+    },
+  },
+});
 
 // Rota: Criar Propriedade
 registry.registerPath({
@@ -146,6 +173,7 @@ registry.registerPath({
 // --- Execução Física das Rotas do Express ---
 router.use(ensureAuthenticated);
 
+router.get('/car/lookup', propertyController.lookupCar);
 router.post('/', propertyController.create);
 router.get('/', propertyController.findAll);
 router.get('/:id', propertyController.findById);

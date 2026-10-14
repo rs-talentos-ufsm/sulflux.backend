@@ -8,10 +8,39 @@ import {
   propertyQuerySchema,
   updatePropertySchema,
   PropertyResponseDTO,
+  carLookupQuerySchema,
 } from '@lib/shared';
 
 export class PropertyController {
   private propertyService = new PropertyService();
+
+  public lookupCar = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const validation = carLookupQuerySchema.safeParse(req.query);
+
+      if (!validation.success) {
+        res.status(400).json({
+          type: '/errors/validation-error',
+          title: 'Número do CAR inválido',
+          status: 400,
+          detail: 'O número do CAR fornecido não atende ao padrão oficial.',
+          errors: validation.error.flatten().fieldErrors,
+        });
+        return;
+      }
+
+      const { car } = validation.data;
+      const carData = await this.propertyService.lookupCar(car);
+
+      res.status(200).json(carData);
+    } catch (error: unknown) {
+      next(error);
+    }
+  };
 
   public create = async (
     req: Request,

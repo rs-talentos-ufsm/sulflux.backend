@@ -35,9 +35,6 @@ export const basePrisma =
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
 
-// Lista de models que NÃO possuem coluna 'deletedAt' e DEVEM ser apagados de verdade
-const nonSoftDeleteModels = ['Property'];
-
 // Aplica as extensões na instância base
 export const prisma = basePrisma.$extends({
   name: 'extensions',
@@ -48,38 +45,6 @@ export const prisma = basePrisma.$extends({
         const context = this as any;
         const count = await context.count({ where });
         return count > 0;
-      },
-    },
-  },
-  query: {
-    $allModels: {
-      // Interceptador APENAS para Escrita (Soft Delete Automático)
-      async delete({ model, args, query }) {
-        // Se a tabela estiver na lista de exclusão, executa o DELETE real no banco
-        if (model && nonSoftDeleteModels.includes(model)) {
-          return query(args);
-        }
-
-        // Caso contrário, intercepta e transforma em um UPDATE (Soft Delete)
-        const modelArgs = args as any;
-        return (basePrisma as any)[model].update({
-          ...modelArgs,
-          data: { deletedAt: new Date() },
-        });
-      },
-
-      async deleteMany({ model, args, query }) {
-        // Se a tabela estiver na lista de exclusão, executa o DELETE real no banco
-        if (model && nonSoftDeleteModels.includes(model)) {
-          return query(args);
-        }
-
-        // Caso contrário, intercepta e transforma em um UPDATE MANY (Soft Delete)
-        const modelArgs = args as any;
-        return (basePrisma as any)[model].updateMany({
-          ...modelArgs,
-          data: { deletedAt: new Date() },
-        });
       },
     },
   },

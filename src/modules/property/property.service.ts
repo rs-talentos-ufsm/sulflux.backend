@@ -7,9 +7,20 @@ import {
   PaginatedPropertiesDTO,
   PropertyStatus,
   PropertyQueryDTO,
+  CarLookupResponseDTO,
 } from '@lib/shared';
+import { CarLookupService } from './car-lookup.service';
 
 export class PropertyService {
+  private carLookupService = new CarLookupService();
+
+  /**
+   * Consulta dados do CAR (SICAR)
+   */
+  public async lookupCar(carNumber: string): Promise<CarLookupResponseDTO> {
+    return this.carLookupService.lookup(carNumber);
+  }
+
   /**
    * Cria uma nova propriedade
    */
@@ -18,12 +29,32 @@ export class PropertyService {
     userId: string,
   ): Promise<PropertyResponseDTO> {
     try {
+      const normalizedCar = data.car ? data.car.trim().toUpperCase() : null;
+
+      if (normalizedCar) {
+        const existing = await prisma.property.findUnique({
+          where: { car: normalizedCar },
+        });
+
+        if (existing) {
+          throw new AppError(
+            `Já existe uma propriedade cadastrada com o CAR "${normalizedCar}".`,
+            409,
+          );
+        }
+      }
+
       const newProperty = await prisma.property.create({
         data: {
-          ...data,
+          name: data.name,
+          location: data.location,
+          car: normalizedCar,
+          area: data.area ?? null,
+          fiscalModules: data.fiscalModules ?? null,
+          ownerName: data.ownerName ?? null,
+          coordinates: (data.coordinates as any) ?? null,
           ownerId: userId,
           status: PropertyStatus.Configure,
-          car: data.car ?? null,
         },
         include: {
           owner: true,
@@ -31,7 +62,14 @@ export class PropertyService {
       });
 
       return newProperty as unknown as PropertyResponseDTO;
-    } catch (error) {
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+      if (error && error.code === 'P2002') {
+        throw new AppError(
+          'Já existe uma propriedade cadastrada com este número de CAR.',
+          409,
+        );
+      }
       console.error('Erro ao criar propriedade: ', error);
       throw new AppError(
         'Não foi possível criar a propriedade devido a um erro interno.',

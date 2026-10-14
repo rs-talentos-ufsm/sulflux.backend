@@ -35,3 +35,5 @@ generated/
 generated
 seed.ts
 seed*.ts
+*.tgz
+lib-shared*.tgz

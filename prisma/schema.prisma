@@ -22,6 +22,19 @@ enum FieldStatus {
   WAITING
 }
 
+enum CycleType {
+  COMMERCIAL
+  COVER
+  FALLOW
+}
+
+enum MonitoringEventType {
+  READY
+  PROCESSING
+  SENT
+  SEASON
+}
+
 // ==================================
 //             SCHEMAS
 // ==================================
@@ -35,11 +48,13 @@ model User {
 
   refreshTokens             RefreshToken[]
   ownedProperties           Property[]
+  documents                 FarmDocument[]
+  assistantMessages         AssistantMessage[]
   
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
-  @@map("users") // tabela no banco chama 'users'
+  @@map("users")
 }
 
 model RefreshToken {
@@ -55,16 +70,22 @@ model RefreshToken {
 }
 
 model Property {
-  id        String         @id @default(uuid()) @db.Uuid
-  name      String
-  location  String
-  car       String?        @unique
-  status    PropertyStatus @default(CONFIGURE)
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String
+  location      String
+  car           String?        @unique
+  area          Float?
+  fiscalModules Float?         @map("fiscal_modules")
+  ownerName     String?        @map("owner_name")
+  coordinates   Json?
+  status        PropertyStatus @default(CONFIGURE)
 
-  ownerId   String         @db.Uuid @map("owner_id")
-  owner     User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId       String         @db.Uuid @map("owner_id")
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  fields    Field[]
+  fields        Field[]
+  events        MonitoringEvent[]
+  documents     FarmDocument[]
   
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
@@ -84,10 +105,131 @@ model Field {
   
   propertyId  String      @db.Uuid @map("property_id")
   property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  cycles      CropCycle[]
+  metrics     FieldMetric[]
+  events      MonitoringEvent[]
   
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
   @@index([propertyId])
   @@map("fields")
+}
+
+model CropCycle {
+  id            String       @id @default(uuid()) @db.Uuid
+  tipo          CycleType    @default(COMMERCIAL)
+  titulo        String
+  safra         String
+  cultura       String?
+  produtividade String?
+  inicio        DateTime
+  fim           DateTime
+  
+  fieldId       String       @db.Uuid @map("field_id")
+  field         Field        @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  
+  inputs        FieldInput[]
+  
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@index([fieldId])
+  @@map("crop_cycles")
+}
+
+model FieldInput {
+  id          String      @id @default(uuid()) @db.Uuid
+  category    String
+  product     String
+  quantity    String
+  date        DateTime
+  
+  cycleId     String      @db.Uuid @map("cycle_id")
+  cycle       CropCycle   @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([cycleId])
+  @@map("field_inputs")
+}
+
+model FieldMetric {
+  id            String      @id @default(uuid()) @db.Uuid
+  month         String
+  year          Int         @default(2024)
+  gpp           Float       @default(0.0) // Gross Primary Production (gCO2 m-2 d-1)
+  reco          Float       @default(0.0) // Ecosystem Respiration
+  nee           Float       @default(0.0) // Net Ecosystem Exchange
+  precipitacao  Float       @default(0.0) // mm
+  aguaSolo      Float       @default(0.0) // %
+  limiarCritico Float       @default(45.0) // %
+  ndvi          Float       @default(0.0) // NDVI 0..1
+  
+  fieldId       String      @db.Uuid @map("field_id")
+  field         Field       @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  @@index([fieldId])
+  @@map("field_metrics")
+}
+
+model MonitoringEvent {
+  id          String               @id @default(uuid()) @db.Uuid
+  type        MonitoringEventType  @default(READY)
+  title       String
+  detail      String?
+  date        DateTime             @default(now())
+
+  propertyId  String               @db.Uuid @map("property_id")
+  property    Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  fieldId     String?              @db.Uuid @map("field_id")
+  field       Field?               @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  @@index([propertyId])
+  @@index([fieldId])
+  @@map("monitoring_events")
+}
+
+model FarmDocument {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String
+  type        String      // "pdf" | "doc" | "spreadsheet" | "image" | "design"
+  size        String
+  folder      String      @default("Geral")
+  fileUrl     String?     @map("file_url")
+
+  propertyId  String?     @db.Uuid @map("property_id")
+  property    Property?   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  userId      String      @db.Uuid @map("user_id")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([propertyId])
+  @@index([userId])
+  @@map("farm_documents")
+}
+
+model AssistantMessage {
+  id          String      @id @default(uuid()) @db.Uuid
+  role        String      // "user" | "assistant"
+  content     String
+  citations   Json?
+
+  userId      String      @db.Uuid @map("user_id")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("assistant_messages")
 }

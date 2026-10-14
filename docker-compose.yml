@@ -16,8 +16,11 @@ services:
       NODE_ENV: ${NODE_ENV}
       DB_DIALECT: ${DB_DIALECT}
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
     depends_on:
       - db
+      - minio
     restart: always
     networks:
       - project_network
@@ -31,11 +34,38 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 3s
+      timeout: 5s
+      retries: 5
     networks:
       - project_network
 
+  minio:
+    image: quay.io/minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: always
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      project_network:
+        aliases:
+          - minio
+
 volumes:
   db-data:
+    name: '${PROJECT_NAME}_db-data'
+  minio-data:
+    name: '${PROJECT_NAME}_minio-data'
 
 networks:
   project_network:

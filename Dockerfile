@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # =========================
 # ESTÁGIO 1: Build 
 # =========================
@@ -6,21 +7,21 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat git
 
-# Copia apenas arquivos de configuração para aproveitar o cache do Docker
+# Copia apenas arquivos de configuração e o pacote compartilhado
 COPY package*.json ./
-RUN npm install
+COPY lib-shared*.tgz ./lib-shared.tgz
+RUN sed -i '/"@lib\/shared"/d' package.json && rm -f package-lock.json && npm install --legacy-peer-deps
+RUN mkdir -p node_modules/@lib/shared && tar -xzf lib-shared.tgz --strip-components=1 -C node_modules/@lib/shared
 
-# Copia todo o código-fonte (agora a shared já vem com a 'dist' populada)
+# Copia todo o código-fonte
 COPY . .
 
-# Gera o Prisma (necessita do schema)
+# Gera o Prisma Client
 ARG DATABASE_URL="postgresql://fake:fake@localhost:5432/db"
 ENV DATABASE_URL=$DATABASE_URL
 RUN npx prisma generate
 
 # Faz o build do Backend
-# (Certifique-se de que seu 'npm run build' no backend 
-# apenas execute 'tsc' e não tente buildar a shared)
 RUN npm run build
 
 # =========================
@@ -30,16 +31,13 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 RUN apk add --no-cache openssl
 
-# Instala apenas dependências de produção
+# Copia dependências compiladas e código
 COPY package*.json ./
-RUN npm install --omit=dev --ignore-scripts
-
-# Copia os artefatos compilados
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# O comando de produção roda o JS compilado
-CMD ["npm", "run", "start"]
+EXPOSE 5001
+
+CMD ["node", "dist/server.js"]
