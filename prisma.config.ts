@@ -4,13 +4,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from '@prisma/config';
 
-const envFile =
-  process.env.NODE_ENV === 'production' ||
-  fs.existsSync(path.resolve(process.cwd(), '.env.production'))
+const isProd = process.env.NODE_ENV === 'production';
+const envFile = isProd
+  ? fs.existsSync(path.resolve(process.cwd(), '.env.production'))
     ? '.env.production'
-    : fs.existsSync(path.resolve(process.cwd(), '.env.development'))
-      ? '.env.development'
-      : '.env';
+    : '.env'
+  : fs.existsSync(path.resolve(process.cwd(), '.env.development'))
+    ? '.env.development'
+    : '.env';
 
 dotenv.config({
   path: envFile,

@@ -8,18 +8,20 @@ import {
   userIdSchema,
 } from '@lib/shared';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const ACCESS_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
-  secure: true,
-  sameSite: 'none',
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
   path: '/',
   maxAge: 1000 * 60 * 15, // 15 minutes
 };
 
 const REFRESH_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
-  secure: true,
-  sameSite: 'none',
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 Dias
 };
@@ -55,8 +57,12 @@ export class AuthController {
       res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
       res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
 
-      // Retorna no formato esperado pelo loginResponseSchema
-      res.status(200).json(user);
+      // Retorna no formato esperado pelo loginResponseSchema e useAuth hook
+      res.status(200).json({
+        ...user,
+        accessToken,
+        refreshToken,
+      });
     } catch (error) {
       next(error);
     }

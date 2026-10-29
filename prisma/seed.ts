@@ -24,13 +24,13 @@ async function seedDatabase() {
   const adminHashedPassword = await PasswordService.hash('Admin@2026');
   const alecsanderHashedPassword =
     await PasswordService.hash('Alecsander@2026');
-  const fernandoHashedPassword = await PasswordService.hash('Usertest123');
 
   const admin = await prisma.user.create({
     data: {
       name: 'Administrador Sulflux',
       email: 'admin@sulflux.com',
       password: adminHashedPassword,
+      role: 'ADMIN',
       isActive: true,
     },
   });
@@ -41,20 +41,11 @@ async function seedDatabase() {
       name: 'Alecsander Sulflux',
       email: 'alecsander@sulflux.com',
       password: alecsanderHashedPassword,
+      role: 'PRODUCER',
       isActive: true,
     },
   });
   console.log(`User created: ${alecsander.email} (ID: ${alecsander.id})`);
-
-  const user = await prisma.user.create({
-    data: {
-      name: 'Fernando Dorneles',
-      email: 'fernandodorneles95@gmail.com',
-      password: fernandoHashedPassword,
-      isActive: true,
-    },
-  });
-  console.log(`User created: ${user.email} (ID: ${user.id})`);
 
   // 3. Criação de Propriedades
   console.log('Seeding Properties...');

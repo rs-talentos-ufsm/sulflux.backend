@@ -35,6 +35,13 @@ enum MonitoringEventType {
   SEASON
 }
 
+enum UserRole {
+  ADMIN
+  PRODUCER
+  INTERMEDIARY
+  VIEWER
+}
+
 // ==================================
 //             SCHEMAS
 // ==================================
@@ -44,6 +51,7 @@ model User {
   name          String
   email         String      @unique
   password      String
+  role          UserRole    @default(PRODUCER)
   isActive      Boolean     @default(true) @map("is_active")
 
   refreshTokens             RefreshToken[]
@@ -124,6 +132,7 @@ model CropCycle {
   safra         String
   cultura       String?
   produtividade String?
+  sequencia     Int          @default(1)
   inicio        DateTime
   fim           DateTime
   
@@ -143,7 +152,9 @@ model FieldInput {
   id          String      @id @default(uuid()) @db.Uuid
   category    String
   product     String
-  quantity    String
+  quantity    Float
+  unit        String      @default("kg/ha")
+  notes       String?
   date        DateTime
   
   cycleId     String      @db.Uuid @map("cycle_id")

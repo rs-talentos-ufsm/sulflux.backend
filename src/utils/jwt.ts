@@ -1,22 +1,26 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.JWT_SECRET;
+function getSecret(): string {
+  return (
+    process.env.JWT_SECRET || 'Ct/oeyjXrXmSimQRqmGzR4m3l6Jq2G2dZixgzsbH8vM='
+  );
+}
 
 interface JwtPayload {
   sub: string;
 }
 
 export function generateAccessToken(userId: string): string {
-  return jwt.sign({ sub: userId }, SECRET!, { expiresIn: '15m' });
+  return jwt.sign({ sub: userId }, getSecret(), { expiresIn: '15m' });
 }
 
 export function generateRefreshToken(userId: string): string {
-  return jwt.sign({ sub: userId }, SECRET!, { expiresIn: '7d' });
+  return jwt.sign({ sub: userId }, getSecret(), { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): string | null {
   try {
-    const decoded = jwt.verify(token, SECRET!) as JwtPayload;
+    const decoded = jwt.verify(token, getSecret()) as JwtPayload;
     return decoded.sub;
   } catch {
     return null;

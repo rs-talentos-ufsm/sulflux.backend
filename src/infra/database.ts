@@ -2,11 +2,30 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
-// Configuração da Connection String baseada no ambiente
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not defined in environment variables');
+import dotenv from 'dotenv';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Garante carregamento das variáveis de ambiente
+if (!process.env.DATABASE_URL) {
+  const isProd = process.env.NODE_ENV === 'production';
+  const envFile = isProd
+    ? fs.existsSync(path.resolve(process.cwd(), '.env.production'))
+      ? '.env.production'
+      : '.env'
+    : fs.existsSync(path.resolve(process.cwd(), '.env.development'))
+      ? '.env.development'
+      : '.env';
+  dotenv.config({ path: envFile });
+  dotenv.config();
 }
+
+// Configuração da Connection String baseada no ambiente
+const connectionString =
+  process.env.DATABASE_URL ||
+  (process.env.DB_USER && process.env.DB_HOST && process.env.DB_NAME
+    ? `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT || 5434}/${process.env.DB_NAME}?schema=public`
+    : 'postgresql://user:UmaSenhaSuperSegura123@localhost:5434/db?schema=public');
 
 // Configura o Pool do Postgres (Driver Nativo)
 const pool = new Pool({
@@ -51,3 +70,39 @@ export const prisma = basePrisma.$extends({
 });
 
 export type ExtendedPrismaClient = typeof prisma;
+
+export async function ensureDatabaseSchema(): Promise<void> {
+  try {
+    await (prisma as any).$executeRawUnsafe(`
+      DO $$ BEGIN
+        CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'PRODUCER', 'INTERMEDIARY', 'VIEWER');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+
+      DO $$ BEGIN
+        ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "role" "UserRole" NOT NULL DEFAULT 'PRODUCER';
+      EXCEPTION
+        WHEN undefined_table THEN null;
+      END $$;
+
+      DO $$ BEGIN
+        ALTER TABLE "crop_cycles" ADD COLUMN IF NOT EXISTS "sequencia" INTEGER NOT NULL DEFAULT 1;
+      EXCEPTION
+        WHEN undefined_table THEN null;
+      END $$;
+
+      DO $$ BEGIN
+        ALTER TABLE "field_inputs" ADD COLUMN IF NOT EXISTS "unit" TEXT NOT NULL DEFAULT 'kg/ha';
+        ALTER TABLE "field_inputs" ADD COLUMN IF NOT EXISTS "notes" TEXT;
+      EXCEPTION
+        WHEN undefined_table THEN null;
+      END $$;
+    `);
+    console.log(
+      '✅ Verificação de integridade do schema concluída com sucesso.',
+    );
+  } catch (err: any) {
+    console.warn('⚠️ Nota sobre verificação do schema:', err?.message || err);
+  }
+}

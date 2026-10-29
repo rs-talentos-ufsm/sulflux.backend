@@ -26,9 +26,42 @@ export class AuthService {
     try {
       const { email, password } = loginData;
 
-      const user = await prisma.user.findUnique({
-        where: { email },
-      });
+      let user: any;
+      try {
+        user = await prisma.user.findUnique({
+          where: { email },
+        });
+      } catch (dbError: any) {
+        // Se a coluna role ou o enum UserRole ainda não existirem no PostgreSQL
+        if (
+          dbError.message?.includes('role') ||
+          dbError.message?.includes('UserRole') ||
+          dbError.code === 'P2021' ||
+          dbError.code === 'P2022'
+        ) {
+          console.warn(
+            '⚠️ Detectada inconsistência de schema para role. Aplicando auto-correção...',
+          );
+          try {
+            await (prisma as any).$executeRawUnsafe(`
+              DO $$ BEGIN
+                CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'PRODUCER', 'INTERMEDIARY', 'VIEWER');
+              EXCEPTION
+                WHEN duplicate_object THEN null;
+              END $$;
+              ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "role" "UserRole" NOT NULL DEFAULT 'PRODUCER';
+            `);
+            user = await prisma.user.findUnique({
+              where: { email },
+            });
+          } catch (recoveryErr) {
+            console.error('Falha na recuperação de schema:', recoveryErr);
+            throw dbError;
+          }
+        } else {
+          throw dbError;
+        }
+      }
 
       if (!user) {
         throw new AppError('Email ou senha inválidos', 401);
@@ -50,7 +83,10 @@ export class AuthService {
       const accessToken = generateAccessToken(user.id);
       const refreshToken = generateRefreshToken(user.id);
 
-      const safeUser = excludePassword(user);
+      const safeUser = excludePassword(user) as any;
+      if (!safeUser.role) {
+        safeUser.role = 'PRODUCER';
+      }
 
       return {
         accessToken,
@@ -61,10 +97,8 @@ export class AuthService {
       if (error instanceof AppError) throw error;
 
       console.error('Erro ao fazer login: ', error);
-      throw new AppError(
-        'Não foi possível fazer login devido a um erro interno.',
-        500,
-      );
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new AppError(`Não foi possível fazer login: ${errorMsg}`, 500);
     }
   }
 
@@ -93,6 +127,7 @@ export class AuthService {
           return await tx.user.create({
             data: {
               ...userData,
+              role: (userData as any).role || 'PRODUCER',
               password: hashedPassword,
               isActive: true,
             },
@@ -100,14 +135,18 @@ export class AuthService {
         },
       );
 
-      const safeUser = excludePassword(newUser);
+      const safeUser = excludePassword(newUser) as any;
+      if (!safeUser.role) {
+        safeUser.role = 'PRODUCER';
+      }
       return safeUser as UserResponseDTO;
     } catch (error) {
       if (error instanceof AppError) throw error;
 
       console.error('Erro ao registrar usuário: ', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
       throw new AppError(
-        'Não foi possível registrar o usuário devido a um erro interno.',
+        `Não foi possível registrar o usuário: ${errorMsg}`,
         500,
       );
     }
@@ -138,10 +177,8 @@ export class AuthService {
       if (error instanceof AppError) throw error;
 
       console.error('Erro ao renovar token: ', error);
-      throw new AppError(
-        'Não foi possível renovar o token devido a um erro interno.',
-        500,
-      );
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new AppError(`Não foi possível renovar o token: ${errorMsg}`, 500);
     }
   }
 
@@ -150,22 +187,54 @@ export class AuthService {
    */
   public async getMe(userId: string): Promise<UserResponseDTO> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-      });
+      let user: any;
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+      } catch (dbError: any) {
+        if (
+          dbError.message?.includes('role') ||
+          dbError.message?.includes('UserRole') ||
+          dbError.code === 'P2021' ||
+          dbError.code === 'P2022'
+        ) {
+          try {
+            await (prisma as any).$executeRawUnsafe(`
+              DO $$ BEGIN
+                CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'PRODUCER', 'INTERMEDIARY', 'VIEWER');
+              EXCEPTION
+                WHEN duplicate_object THEN null;
+              END $$;
+              ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "role" "UserRole" NOT NULL DEFAULT 'PRODUCER';
+            `);
+            user = await prisma.user.findUnique({
+              where: { id: userId },
+            });
+          } catch {
+            throw dbError;
+          }
+        } else {
+          throw dbError;
+        }
+      }
 
       if (!user) {
         throw new AppError('Usuário não encontrado.', 404);
       }
 
-      const safeUser = excludePassword(user);
+      const safeUser = excludePassword(user) as any;
+      if (!safeUser.role) {
+        safeUser.role = 'PRODUCER';
+      }
       return safeUser as UserResponseDTO;
     } catch (error) {
       if (error instanceof AppError) throw error;
 
       console.error('Erro ao buscar dados do usuário: ', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
       throw new AppError(
-        'Não foi possível buscar os dados do usuário devido a um erro interno.',
+        `Não foi possível buscar os dados do usuário: ${errorMsg}`,
         500,
       );
     }

@@ -43,6 +43,14 @@ export function createApp(): Express {
     process.env.BACKEND_URL + '/',
     process.env.FRONTEND_URL,
     process.env.FRONTEND_URL + '/',
+    process.env.ADMIN_URL,
+    process.env.ADMIN_URL + '/',
+    'http://localhost:5174',
+    'http://localhost:5184',
+    'http://localhost:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:5184',
+    'http://127.0.0.1:5173',
     process.env.VERCEL_FRONTEND_URL,
     process.env.VERCEL_FRONTEND_URL + '/',
     process.env.DOMINIO_FRONTEND_URL,
@@ -53,13 +61,18 @@ export function createApp(): Express {
 
   const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-      // DEBUG
-      console.log('CORS Origin:', origin);
-
-      // Permite se não houver origin (ex: Postman ou chamadas diretas do mesmo servidor)
+      // Permite se não houver origin (ex: chamadas internas, testes, ferramentas curl/postman)
       if (!origin) return callback(null, true);
 
-      // 3. Verificação normalizada (remove barras finais para comparar)
+      // Em ambiente de desenvolvimento ou teste, aceita qualquer porta em localhost ou 127.0.0.1
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      // Verificação normalizada (remove barras finais para comparar)
       const isAllowed = allowedOrigins.some(
         (allowed) => allowed.replace(/\/$/, '') === origin.replace(/\/$/, ''),
       );
@@ -75,16 +88,22 @@ export function createApp(): Express {
         );
       }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
-    credentials: true, // Necessário se você usar Cookies ou Headers de Autenticação
-    maxAge: 86400, // Cache da resposta do Preflight (24 horas) para performance
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-requested-with',
+      'Accept',
+      'Cookie',
+    ],
+    credentials: true, // Necessário para cookies HTTP-only
+    maxAge: 86400,
   };
 
   // ======================
   // Configurações do Express
   // ======================
-  app.set('trust proxy', 1); // Necessário se estiver atrás de um proxy (ex: Nginx, Heroku, Vercel)
+  app.set('trust proxy', 1);
 
   // ======================
   // Middlewares globais
@@ -92,10 +111,12 @@ export function createApp(): Express {
   app.use(helmet());
   app.use(limiter);
 
-  // Aplica o CORS a todas as requisições padrão (GET, POST, etc)
+  // Aplica o CORS a todas as requisições
   app.use(cors(corsOptions));
 
-  app.use(express.json());
+  // Limite expandido para suportar uploads de Shapefiles em Base64 e geometrias GeoJSON
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cookieParser());
 
   const loggerMiddleware = pinoHttp({
