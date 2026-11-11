@@ -192,7 +192,7 @@ export class AssistantService {
           f.cycles.forEach((c: any) => {
             doc += `        * ${c.titulo} | Cultura: ${c.cultura || 'N/A'} | Safra: ${c.safra} | Tipo: ${c.tipo} | Produtividade: ${c.produtividade || 'N/A'}\n`;
             if (c.inputs && c.inputs.length > 0) {
-              doc += `          Insumos: ${c.inputs.map((i: any) => `${i.product} (${i.quantity})`).join(', ')}\n`;
+              doc += `          Insumos: ${c.inputs.map((i: any) => `${i.product} (${i.quantity} ${i.unit || ''})`.trim()).join(', ')}\n`;
             }
           });
         }
@@ -295,12 +295,17 @@ Resumo rápido do produtor:
 - Safra Ativa: ${contextSummary.activeSeason}
 - Balanço de Carbono: ${contextSummary.totalCarbonBalance}
 
-DIRETRIZES DE RESPOSTA:
+DIRETRIZES DE RESPOSTA E FORMATAÇÃO:
 - Responda em português brasileiro de forma técnica, empática, fluida e acionável.
 - Use os nomes reais das fazendas, talhões, culturas e métricas presentes nos dados operacionais sempre que oportuno.
 - Forneça recomendações práticas e fundamentadas na agronomia e conservação ambiental.
+- ESTRUTURAÇÃO VISUAL OBRIGATÓRIA:
+  * NUNCA escreva a resposta em um bloco único ou parágrafo contínuo.
+  * Divida o texto SEMPRE em parágrafos curtos, separados por quebra de linha dupla (\\n\\n).
+  * Quando apresentar indicadores, fluxos de carbono, histórico ou recomendações, utilize OBRIGATORIAMENTE listas com marcadores (- item).
+  * Destaque termos-chave, nomes de propriedades, talhões e valores numéricos importantes em **negrito** (ex.: **+15,6 t CO2e**, **Talhão 1**, **Safra 2023/2024**).
 - Responda OBRIGATORIAMENTE em formato JSON com dois campos:
-  - "text": string contendo sua resposta completa. Pode conter formatação de parágrafos e listas claras.
+  - "text": string contendo a resposta completa formatada em Markdown com parágrafos separados por quebra dupla, listas (- ) e destaques em **negrito**.
   - "citations": array de 1 a 3 objetos contendo { "label": string, "category": "carbono" | "hidrico" | "talhoes" | "manejo" | "satelite" } resumindo tópicos-chave abordados.
 `;
 
@@ -512,7 +517,7 @@ DIRETRIZES DE RESPOSTA:
       lower.includes('co2')
     ) {
       return {
-        text: `O balanço de carbono consolidado das suas propriedades está positivo. Somando os ${context.readyFieldsCount} talhões com processamento concluído, você acumula um saldo líquido de ${context.totalCarbonBalance} neste ciclo. O principal vetor de sequestro tem sido o plantio direto com cobertura vegetal de aveia e nabo forrageiro na entressafra, que reduz drasticamente a oxidação da matéria orgânica superficial.`,
+        text: `O balanço de carbono consolidado das suas propriedades está **positivo**!\n\nSomando os **${context.readyFieldsCount} talhões** com processamento concluído, você acumula um saldo líquido de **${context.totalCarbonBalance}** neste ciclo.\n\nPrincipais vetores de sequestro observados:\n- **Plantio Direto Consolidado**: rotação com cobertura vegetal de aveia e nabo forrageiro na entressafra;\n- **Retenção de Matéria Orgânica**: redução drástica da oxidação superficial do solo;\n- **Fluxos Micrometeorológicos**: dados calibrados pelas torres de Eddy Covariance confirmando o dreno de carbono.`,
         citations: [
           {
             label: `Talhões Prontos (${context.totalCarbonBalance})`,
@@ -530,7 +535,7 @@ DIRETRIZES DE RESPOSTA:
       lower.includes('quais')
     ) {
       return {
-        text: `Atualmente você possui ${context.readyFieldsCount} talhões com resultados prontos para auditoria e tomada de decisão sobre um total de ${context.totalProperties} propriedades cadastradas. Os dados de sensoriamento Eddy Covariance e Sentinel-2A já foram calibrados e estão prontos na aba de Resultados de cada talhão.`,
+        text: `Atualmente você possui **${context.readyFieldsCount} talhões** com resultados prontos para auditoria e tomada de decisão sobre um total de **${context.totalProperties} propriedades** cadastradas.\n\nStatus dos dados:\n- **Eddy Covariance**: séries de GPP, Reco e NEE calibradas;\n- **Sentinel-2A**: resolução de 10m com NDVI disponível;\n- **Aba de Resultados**: relatórios prontos para visualização e exportação.`,
         citations: [
           {
             label: `${context.readyFieldsCount} talhões prontos`,
@@ -548,10 +553,10 @@ DIRETRIZES DE RESPOSTA:
       lower.includes('estresse')
     ) {
       return {
-        text: `Os indicadores hídricos mostram estabilidade recente com a retomada das chuvas de outono. No entanto, o histórico da safra registra períodos de estresse onde a água no solo cruzou o limiar crítico de murcha por períodos prolongados. Recomendamos monitorar o perfil de umidade antes da semeadura de inverno e manter a cobertura permanente do solo.`,
+        text: `Os indicadores hídricos mostram **estabilidade recente** com a retomada das chuvas acumuladas.\n\nRecomendações e pontos de atenção:\n- **Histórico de Estresse**: períodos onde a água no solo se aproximou do limiar crítico (45%);\n- **Perfil de Umidade**: monitorar antes da semeadura de inverno;\n- **Manejo**: manter a cobertura vegetal permanente para maximizar a retenção hídrica.`,
         citations: [
           { label: 'Umidade do Solo Monitorada', category: 'hidrico' },
-          { label: 'Limiar Crítico de Murcha', category: 'hidrico' },
+          { label: 'Limiar Crítico (45%)', category: 'hidrico' },
         ],
       };
     }
@@ -563,7 +568,7 @@ DIRETRIZES DE RESPOSTA:
       lower.includes('pratica')
     ) {
       return {
-        text: `Com base nas medições espectrais e no histórico de balanço de fluxo, três práticas têm o maior potencial de agregação de valor para suas áreas: 1) Ampliar a área com consórcio aveia + nabo para cobrir 100% dos talhões; 2) Reduzir o revolvimento do solo em áreas de pousio; 3) Racionalizar a adubação nitrogenada com base nos mapas de NDVI para diminuir as emissões de N2O.`,
+        text: `Com base nas medições espectrais e no histórico de fluxo, destacamos **três práticas estratégicas** para suas áreas:\n\n- **Consórcio de Inverno**: ampliar a área de aveia + nabo forrageiro para cobrir 100% dos talhões;\n- **Sem Revolver o Solo**: manter a palhada em áreas de pousio para retenção de umidade e carbono;\n- **Adubação Racional**: aplicar nitrogênio de forma dosada com base nos mapas de NDVI para mitigar emissões de N₂O.`,
         citations: [
           { label: 'Cobertura Vegetal Consorciada', category: 'manejo' },
           { label: 'Balanço de Nitrogênio e Solo', category: 'carbono' },
@@ -572,7 +577,7 @@ DIRETRIZES DE RESPOSTA:
     }
 
     return {
-      text: `Olá, ${context.producerName}! Como copiloto do Sulflux, acompanho em tempo real os fluxos de carbono medidos pelas torres de Eddy Covariance, os balanços hídricos e as imagens multiespectrais dos seus talhões em todas as ${context.totalProperties} propriedades cadastradas. Como posso ajudar nas suas decisões agronômicas e ambientais hoje?`,
+      text: `Olá, **${context.producerName}**!\n\nComo copiloto do **Sulflux**, acompanho em tempo real os fluxos de carbono medidos por Eddy Covariance, os balanços hídricos e as imagens orbitais dos seus talhões em todas as **${context.totalProperties} propriedades** cadastradas.\n\nComo posso ajudar nas suas decisões agronômicas e ambientais hoje?`,
       citations: [
         { label: `${context.activeSeason} Ativa`, category: 'talhoes' },
         { label: 'Monitoramento Contínuo', category: 'manejo' },

@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat git
 
 # Copia os arquivos de dependência
-COPY package*.json ./
+COPY package*.json lib-shared*.tgz* ./
 
 # Garante que git use HTTPS (não SSH) — evita falha quando o host tem
 # 'url.insteadOf' configurado para redirecionar HTTPS→SSH
